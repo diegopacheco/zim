@@ -9,7 +9,6 @@ A simple text editor implemented in Zig `0.13`, inspired by the functionality of
 - **Normal Mode**: Navigate and manipulate text without inserting characters.
 - **Insert Mode**: Type and edit text directly.
 - **Command Mode**: Execute commands for saving and quitting (:q, :w :i)
-- **Text Buffer Management**: Efficiently manage the text being edited.
 - **Terminal UI**: Render the text buffer and handle user input in the terminal.
 
 ## Rationale
@@ -17,7 +16,7 @@ A simple text editor implemented in Zig `0.13`, inspired by the functionality of
 * No Dependencies, No Libs, No Frameworks, No C
 * Purelly written in Zig
 * Self-contained
-* ~400 LoC
+* ~380 LoC
 
 ## Build
 
@@ -37,6 +36,8 @@ or just do:
 ```
 zig build run
 ```
+
+<img src="zim-running.png" alt="ZIM">
 
 ## Raw mode flags
 
