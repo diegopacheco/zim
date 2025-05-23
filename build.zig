@@ -11,11 +11,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    const editor_mod = b.addModule("editor", .{
-        .root_source_file = b.path("src/editor.zig"),
-    });
-
-    exe.addModule("editor", editor_mod);
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);
