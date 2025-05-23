@@ -1,6 +1,8 @@
-# zig-text-editor
+# ZIM
 
 A simple text editor implemented in Zig, inspired by the functionality of Vim. This project serves as a learning exercise in building a text editor from scratch using the Zig programming language.
+
+<img src="zim.png" width="200" alt="ZIM">
 
 ## Features
 
@@ -23,7 +25,7 @@ A simple text editor implemented in Zig, inspired by the functionality of Vim. T
 - `src/utils/terminal.zig`: Utility functions for terminal operations.
 - `src/utils/file_io.zig`: Utility functions for file operations.
 
-## Building the Project
+## Build
 
 To build the text editor, navigate to the project directory and run:
 
@@ -31,18 +33,13 @@ To build the text editor, navigate to the project directory and run:
 zig build
 ```
 
-## Running the Editor
+## Running
 
 After building, you can run the text editor with:
-
 ```
-./zig-text-editor
+ ./zig-out/bin/zim
 ```
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a pull request or open an issue for any enhancements or bug fixes.
-
-## License
-
-This project is licensed under the MIT License. See the LICENSE file for details.
+or just do:
+```
+zig build run
+```
