@@ -12,6 +12,13 @@ A simple text editor implemented in Zig, inspired by the functionality of Vim. T
 - **Text Buffer Management**: Efficiently manage the text being edited.
 - **Terminal UI**: Render the text buffer and handle user input in the terminal.
 
+## Rationale
+
+* No Dependencies, No Libs, No Frameworks, No C
+* Purelly written in Zig
+* Self-contained
+* ~400 LoC
+
 ## Build
 
 To build the text editor, navigate to the project directory and run:

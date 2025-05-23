@@ -5,6 +5,22 @@ const os = std.os;
 const mem = std.mem;
 const Allocator = std.mem.Allocator;
 
+pub fn main() !void {
+    const allocator = std.heap.page_allocator;
+    var editor = Editor.init(allocator);
+    defer editor.deinit();
+    try editor.setup_ui();
+
+    while (true) {
+        const input = try editor.get_input();
+        if (std.mem.eql(u8, input, "exit")) {
+            break;
+        }
+
+        try editor.process_input(input);
+    }
+}
+
 pub const Mode = enum {
     Normal,
     Insert,
@@ -61,13 +77,11 @@ pub const Editor = struct {
     }
 
     pub fn setup_ui(self: *Editor) !void {
-        // Get terminal size if possible
         if (self.get_window_size()) |size| {
             self.width = size.width;
             self.height = size.height;
         }
 
-        // Set terminal to raw mode
         var raw = self.term_orig;
         raw.lflag.ECHO = false;
         raw.lflag.ICANON = false;
@@ -83,15 +97,9 @@ pub const Editor = struct {
         raw.cc[@intFromEnum(std.posix.V.MIN)] = 1;
         raw.cc[@intFromEnum(std.posix.V.TIME)] = 0;
         try std.posix.tcsetattr(std.io.getStdIn().handle, .FLUSH, raw);
-
-        // Add a blank line to start with
         try self.lines.append(try self.allocator.alloc(u8, 0));
-
-        // Set initial status message
         const help_msg = "HELP: ESC = normal mode, i = insert mode, :q = quit, :w = save";
         @memcpy(self.status_message[0..help_msg.len], help_msg);
-
-        // Initial render
         try self.render();
     }
 
@@ -108,10 +116,9 @@ pub const Editor = struct {
     pub fn get_input(self: *Editor) ![]const u8 {
         var buf: [3]u8 = undefined;
         const bytes_read = try self.stdin.read(&buf);
-
         if (bytes_read == 0) return "exit";
 
-        // If it's ESC
+        // ESC
         if (buf[0] == 27) {
             return "escape";
         }
@@ -189,10 +196,8 @@ pub const Editor = struct {
                 // Split the line at cursor
                 const current_line = self.lines.items[self.cursor_y];
                 const new_line = try self.allocator.alloc(u8, current_line.len - self.cursor_x);
-
                 @memcpy(new_line, current_line[self.cursor_x..]);
 
-                // Truncate current line
                 const truncated = try self.allocator.alloc(u8, self.cursor_x);
                 @memcpy(truncated, current_line[0..self.cursor_x]);
 
@@ -251,7 +256,6 @@ pub const Editor = struct {
 
     fn process_command_mode(self: *Editor, input: []const u8) !void {
         if (input.len == 0) return;
-
         if (std.mem.eql(u8, input, "escape")) {
             self.mode = .Normal;
             @memcpy(self.status_message[0..12], "-- NORMAL --");
@@ -263,10 +267,9 @@ pub const Editor = struct {
                 // Execute command
                 const cmd = try self.command_buffer.toOwnedSlice();
                 defer self.allocator.free(cmd);
-
                 if (cmd.len > 0) {
+                    // Quit without saving
                     if (std.mem.eql(u8, cmd, "q")) {
-                        // Quit without saving
                         std.process.exit(0);
                     } else if (std.mem.eql(u8, cmd, "w")) {
                         // Save file
@@ -290,7 +293,6 @@ pub const Editor = struct {
                         @memcpy(self.status_message[0..15], "Unknown command");
                     }
                 }
-
                 self.mode = .Normal;
             },
             127, 8 => { // Backspace or Delete
@@ -307,9 +309,7 @@ pub const Editor = struct {
     fn save_file(self: *Editor, path: []const u8) !void {
         const file = try fs.cwd().createFile(path, .{});
         defer file.close();
-
         const writer = file.writer();
-
         for (self.lines.items, 0..) |line, i| {
             try writer.writeAll(line);
             if (i < self.lines.items.len - 1) {
@@ -317,8 +317,6 @@ pub const Editor = struct {
             }
         }
     }
-
-    // ...existing code...
 
     fn render(self: *Editor) !void {
         // Move cursor to top-left without clearing screen initially
@@ -406,22 +404,3 @@ pub const Editor = struct {
         }
     }
 };
-
-pub fn main() !void {
-    const allocator = std.heap.page_allocator;
-
-    var editor = Editor.init(allocator);
-    defer editor.deinit();
-
-    try editor.setup_ui();
-
-    while (true) {
-        const input = try editor.get_input();
-
-        if (std.mem.eql(u8, input, "exit")) {
-            break;
-        }
-
-        try editor.process_input(input);
-    }
-}
