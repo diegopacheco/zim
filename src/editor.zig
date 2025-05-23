@@ -88,7 +88,8 @@ pub const Editor = struct {
         try self.lines.append(try self.allocator.alloc(u8, 0));
 
         // Set initial status message
-        @memcpy(self.status_message[0..78], "HELP: ESC = normal mode, i = insert mode, :q = quit, :w = save              ");
+        const help_msg = "HELP: ESC = normal mode, i = insert mode, :q = quit, :w = save";
+        @memcpy(self.status_message[0..help_msg.len], help_msg);
 
         // Initial render
         try self.render();
