@@ -65,9 +65,7 @@ pub const Editor = struct {
     }
 
     pub fn deinit(self: *Editor) void {
-        // Restore terminal settings
         std.posix.tcsetattr(std.io.getStdIn().handle, .FLUSH, self.term_orig) catch {};
-
         for (self.lines.items) |line| {
             self.allocator.free(line);
         }
@@ -81,7 +79,6 @@ pub const Editor = struct {
             self.width = size.width;
             self.height = size.height;
         }
-
         var raw = self.term_orig;
         raw.lflag.ECHO = false;
         raw.lflag.ICANON = false;
@@ -117,31 +114,26 @@ pub const Editor = struct {
         var buf: [3]u8 = undefined;
         const bytes_read = try self.stdin.read(&buf);
         if (bytes_read == 0) return "exit";
-
         // ESC
         if (buf[0] == 27) {
             return "escape";
         }
-
         return self.allocator.dupe(u8, buf[0..bytes_read]);
     }
 
     pub fn process_input(self: *Editor, input: []const u8) !void {
         const should_free = !std.mem.eql(u8, input, "exit") and !std.mem.eql(u8, input, "escape");
         defer if (should_free) self.allocator.free(input);
-
         switch (self.mode) {
             .Normal => try self.process_normal_mode(input),
             .Insert => try self.process_insert_mode(input),
             .Command => try self.process_command_mode(input),
         }
-
         try self.render();
     }
 
     fn process_normal_mode(self: *Editor, input: []const u8) !void {
         if (input.len == 0) return;
-
         switch (input[0]) {
             'i' => {
                 self.mode = .Insert;
@@ -180,20 +172,16 @@ pub const Editor = struct {
 
     fn process_insert_mode(self: *Editor, input: []const u8) !void {
         if (input.len == 0) return;
-
         if (std.mem.eql(u8, input, "escape")) {
             self.mode = .Normal;
             @memcpy(self.status_message[0..12], "-- NORMAL --");
             return;
         }
-
         if (self.lines.items.len == 0) {
             try self.lines.append(try self.allocator.alloc(u8, 0));
         }
-
         switch (input[0]) {
             '\r', '\n' => {
-                // Split the line at cursor
                 const current_line = self.lines.items[self.cursor_y];
                 const new_line = try self.allocator.alloc(u8, current_line.len - self.cursor_x);
                 @memcpy(new_line, current_line[self.cursor_x..]);
@@ -204,7 +192,6 @@ pub const Editor = struct {
                 self.allocator.free(current_line);
                 self.lines.items[self.cursor_y] = truncated;
 
-                // Insert new line
                 try self.lines.insert(self.cursor_y + 1, new_line);
                 self.cursor_y += 1;
                 self.cursor_x = 0;
@@ -221,7 +208,6 @@ pub const Editor = struct {
                     self.lines.items[self.cursor_y] = new_line;
                     self.cursor_x -= 1;
                 } else if (self.cursor_y > 0) {
-                    // Join with previous line
                     const prev_line = self.lines.items[self.cursor_y - 1];
                     const current_line = self.lines.items[self.cursor_y];
 
@@ -264,7 +250,6 @@ pub const Editor = struct {
 
         switch (input[0]) {
             '\r', '\n' => {
-                // Execute command
                 const cmd = try self.command_buffer.toOwnedSlice();
                 defer self.allocator.free(cmd);
                 if (cmd.len > 0) {
@@ -327,18 +312,14 @@ pub const Editor = struct {
 
         for (self.lines.items, 0..) |line, line_num| {
             if (line_num >= max_lines) break;
-
             // Clear the line first
             try self.stdout.writeAll("\x1b[2K");
-
             // Line number
             try self.stdout.print("{d:>4} ", .{line_num + 1});
-
             // Content
             if (line.len > 0) {
                 try self.stdout.writeAll(line);
             }
-
             try self.stdout.writeAll("\r\n");
         }
 
@@ -356,7 +337,6 @@ pub const Editor = struct {
         defer self.allocator.free(status);
         @memset(status, ' ');
 
-        // Mode and filename
         const mode_str: []const u8 = switch (self.mode) {
             .Normal => "NORMAL",
             .Insert => "INSERT",
@@ -372,10 +352,8 @@ pub const Editor = struct {
         const len = @min(status_text.len, status.len);
         @memcpy(status[0..len], status_text[0..len]);
 
-        // Cursor position
         const pos_str = try std.fmt.allocPrint(self.allocator, "{d}:{d}", .{ self.cursor_y + 1, self.cursor_x + 1 });
         defer self.allocator.free(pos_str);
-
         if (pos_str.len <= status.len) {
             @memcpy(status[status.len - pos_str.len ..], pos_str);
         }
