@@ -318,9 +318,10 @@ pub const Editor = struct {
         }
     }
 
+    // ...existing code...
+
     fn render(self: *Editor) !void {
-        // Clear screen
-        try self.stdout.writeAll("\x1b[2J");
+        // Move cursor to top-left without clearing screen initially
         try self.stdout.writeAll("\x1b[H");
 
         // Draw lines (leave space for status at bottom)
@@ -328,6 +329,9 @@ pub const Editor = struct {
 
         for (self.lines.items, 0..) |line, line_num| {
             if (line_num >= max_lines) break;
+
+            // Clear the line first
+            try self.stdout.writeAll("\x1b[2K");
 
             // Line number
             try self.stdout.print("{d:>4} ", .{line_num + 1});
@@ -342,10 +346,12 @@ pub const Editor = struct {
 
         // Fill remaining lines if needed
         for (self.lines.items.len..max_lines) |line_num| {
+            try self.stdout.writeAll("\x1b[2K"); // Clear line
             try self.stdout.print("{d:>4} \r\n", .{line_num + 1});
         }
 
         // Status line
+        try self.stdout.writeAll("\x1b[2K"); // Clear line
         try self.stdout.writeAll("\x1b[7m"); // Inverse video
 
         var status = try self.allocator.alloc(u8, self.width);
@@ -379,12 +385,17 @@ pub const Editor = struct {
         try self.stdout.writeAll(status);
         try self.stdout.writeAll("\x1b[0m\r\n"); // Reset formatting
 
-        // Command or message
+        // Command or message line
+        try self.stdout.writeAll("\x1b[2K"); // Clear line
         if (self.mode == .Command) {
             try self.stdout.writeAll(":");
             try self.stdout.writeAll(self.command_buffer.items);
         } else {
-            try self.stdout.writeAll(self.status_message);
+            // Only show help message in Normal mode to reduce flashing
+            if (self.mode == .Normal) {
+                const help_msg = "HELP: ESC = normal mode, i = insert mode, :q = quit, :w = save";
+                try self.stdout.writeAll(help_msg);
+            }
         }
 
         // Position cursor
