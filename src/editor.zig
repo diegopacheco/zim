@@ -29,10 +29,7 @@ pub const Editor = struct {
     pub fn init(allocator: Allocator) Editor {
         var stdin_file = std.io.getStdIn();
         var stdout_file = std.io.getStdOut();
-
-        // Save original terminal settings
-        var orig: std.posix.termios = undefined;
-        _ = std.posix.tcgetattr(stdin_file.handle, &orig) catch unreachable;
+        const orig = std.posix.tcgetattr(stdin_file.handle) catch unreachable;
 
         return Editor{
             .allocator = allocator,
