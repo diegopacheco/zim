@@ -120,7 +120,8 @@ pub const Editor = struct {
     }
 
     pub fn process_input(self: *Editor, input: []const u8) !void {
-        defer self.allocator.free(input);
+        const should_free = !std.mem.eql(u8, input, "exit") and !std.mem.eql(u8, input, "escape");
+        defer if (should_free) self.allocator.free(input);
 
         switch (self.mode) {
             .Normal => try self.process_normal_mode(input),
